@@ -233,23 +233,24 @@ export function StationPanel({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         className="
-    w-[95vw]
+    w-screen
     max-w-none
+    overflow-x-hidden
     overflow-y-auto
     border-l
     bg-[#fcfcfb]
     p-0
 
-    sm:w-[720px]
-    sm:max-w-none
+    sm:w-[92vw]
+    sm:max-w-[720px]
 
-    md:w-[780px]
+    md:w-[760px]
     md:max-w-none
 
-    lg:w-[860px]
+    lg:w-[820px]
     lg:max-w-none
 
-    xl:w-[920px]
+    xl:w-[880px]
     xl:max-w-none
   "
       >
@@ -263,21 +264,23 @@ export function StationPanel({
               className="
                 border-b
                 bg-white
-                px-6
-                py-6
-                pr-14
+                px-4
+                py-5
+                pr-12
                 sm:px-8
                 sm:py-7
               "
             >
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-3 sm:gap-5">
                 {/* Station code */}
 
                 <div
                   className="
                     flex
-                    h-[82px]
-                    w-[82px]
+                    h-[66px]
+                    w-[66px]
+                    sm:h-[82px]
+                    sm:w-[82px]
                     shrink-0
                     flex-col
                     items-center
@@ -305,7 +308,7 @@ export function StationPanel({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
-                    <SheetTitle className="text-3xl font-black tracking-tight sm:text-[34px]">
+                    <SheetTitle className="break-keep text-2xl font-black tracking-tight sm:text-[34px]">
                       {station.ja}駅
                     </SheetTitle>
 
@@ -314,7 +317,7 @@ export function StationPanel({
                     </span>
                   </div>
 
-                  <SheetDescription className="mt-3 text-base text-zinc-700">
+                  <SheetDescription className="mt-2 text-sm text-zinc-700 sm:mt-3 sm:text-base">
                     <span className="font-medium text-zinc-900">
                       {station.en}
                     </span>
@@ -331,7 +334,7 @@ export function StationPanel({
                 BODY
             ============================ */}
 
-            <div className="space-y-6 px-5 py-6 sm:px-8 sm:py-7">
+            <div className="space-y-5 px-4 py-5 sm:space-y-6 sm:px-8 sm:py-7">
               {/* Loading */}
 
               {loading && (
@@ -598,7 +601,7 @@ function DirectionSection({
             }}
           />
 
-          <h2 className="text-2xl font-black">{title}</h2>
+          <h2 className="text-xl font-black sm:text-2xl">{title}</h2>
 
           <span className="text-sm text-zinc-500">{korean}</span>
         </div>
@@ -606,7 +609,9 @@ function DirectionSection({
         <div className="ml-7 mt-3 flex items-center gap-3">
           <span className="text-xl font-bold text-[#74b500]">→</span>
 
-          <span className="text-base font-bold">{toward}</span>
+          <span className="break-keep text-sm font-bold sm:text-base">
+            {toward}
+          </span>
         </div>
       </div>
 
@@ -654,8 +659,10 @@ function DirectionSection({
                   <div
                     className="
                       flex
-                      h-12
-                      w-12
+                      h-10
+                      w-10
+                      sm:h-12
+                      sm:w-12
                       shrink-0
                       items-center
                       justify-center
@@ -671,7 +678,7 @@ function DirectionSection({
                   </div>
 
                   <div>
-                    <p className="text-2xl font-black tabular-nums tracking-tight">
+                    <p className="text-xl font-black tabular-nums tracking-tight sm:text-2xl">
                       {train.departureTime}
                     </p>
 
@@ -694,7 +701,7 @@ function DirectionSection({
                     </>
                   ) : (
                     <>
-                      <p className="text-xl font-black tabular-nums sm:text-2xl">
+                      <p className="text-lg font-black tabular-nums sm:text-2xl">
                         약 {train.minutesUntilDeparture}분
                       </p>
 
