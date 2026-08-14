@@ -1,0 +1,190 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import type { NextTrain, StationTimetable } from "@/types/timetable";
+
+const ODPT_URL = "https://api-challenge.odpt.org/api/v4/odpt:StationTimetable";
+
+function getJapanNow() {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    weekday: "short",
+  });
+
+  const parts = formatter.formatToParts(new Date());
+
+  const getPart = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  const year = Number(getPart("year"));
+  const month = Number(getPart("month"));
+  const day = Number(getPart("day"));
+  const hour = Number(getPart("hour"));
+  const minute = Number(getPart("minute"));
+  const weekday = getPart("weekday");
+
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    weekday,
+  };
+}
+
+function getCalendar(weekday: string): "Weekday" | "SaturdayHoliday" {
+  if (weekday === "Sat" || weekday === "Sun") {
+    return "SaturdayHoliday";
+  }
+
+  return "Weekday";
+}
+
+function getMinutesUntilDeparture(
+  departureTime: string,
+  currentHour: number,
+  currentMinute: number,
+) {
+  const [hourString, minuteString] = departureTime.split(":");
+
+  const departureHour = Number(hourString);
+  const departureMinute = Number(minuteString);
+
+  const nowMinutes = currentHour * 60 + currentMinute;
+
+  const departureMinutes = departureHour * 60 + departureMinute;
+
+  return departureMinutes - nowMinutes;
+}
+
+function getNextTrains(
+  timetable: StationTimetable | undefined,
+  currentHour: number,
+  currentMinute: number,
+): NextTrain[] {
+  if (!timetable) {
+    return [];
+  }
+
+  return timetable["odpt:stationTimetableObject"]
+    .map((item) => {
+      const minutesUntilDeparture = getMinutesUntilDeparture(
+        item["odpt:departureTime"],
+        currentHour,
+        currentMinute,
+      );
+
+      return {
+        trainNumber: item["odpt:trainNumber"],
+        departureTime: item["odpt:departureTime"],
+        minutesUntilDeparture,
+      };
+    })
+    .filter((train) => train.minutesUntilDeparture >= 0)
+    .sort((a, b) => a.minutesUntilDeparture - b.minutesUntilDeparture)
+    .slice(0, 3);
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const apiKey = process.env.ODPT_API_KEY;
+
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          error: "ODPT_API_KEY가 설정되지 않았습니다.",
+        },
+        {
+          status: 500,
+        },
+      );
+    }
+
+    const station = request.nextUrl.searchParams.get("station");
+
+    if (!station) {
+      return NextResponse.json(
+        {
+          error: "station 값이 필요합니다.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    const now = getJapanNow();
+    const calendar = getCalendar(now.weekday);
+
+    const params = new URLSearchParams({
+      "odpt:operator": "odpt.Operator:JR-East",
+
+      "odpt:railway": "odpt.Railway:JR-East.Yamanote",
+
+      "odpt:station": `odpt.Station:JR-East.Yamanote.${station}`,
+
+      "acl:consumerKey": apiKey,
+    });
+
+    const response = await fetch(`${ODPT_URL}?${params.toString()}`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          error: "ODPT 시간표 호출에 실패했습니다.",
+          status: response.status,
+        },
+        {
+          status: response.status,
+        },
+      );
+    }
+
+    const data = (await response.json()) as StationTimetable[];
+
+    const todayData = data.filter(
+      (timetable) => timetable["odpt:calendar"] === `odpt.Calendar:${calendar}`,
+    );
+
+    const innerLoop = todayData.find(
+      (timetable) =>
+        timetable["odpt:railDirection"] === "odpt.RailDirection:InnerLoop",
+    );
+
+    const outerLoop = todayData.find(
+      (timetable) =>
+        timetable["odpt:railDirection"] === "odpt.RailDirection:OuterLoop",
+    );
+
+    return NextResponse.json({
+      station,
+      calendar,
+      updatedAt: new Date().toISOString(),
+
+      directions: {
+        innerLoop: getNextTrains(innerLoop, now.hour, now.minute),
+
+        outerLoop: getNextTrains(outerLoop, now.hour, now.minute),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        error: "시간표 데이터를 처리하는 중 오류가 발생했습니다.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
