@@ -367,6 +367,7 @@ export async function GET(request: NextRequest) {
     }
 
     const station = request.nextUrl.searchParams.get("station");
+    const railway = request.nextUrl.searchParams.get("railway") ?? "Yamanote";
 
     if (!station) {
       return NextResponse.json(
@@ -379,11 +380,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const supportedRailways: Record<string, string> = {
+      Yamanote: "JR-East.Yamanote",
+      ChuoRapid: "JR-East.ChuoRapid",
+    };
+
+    const railwayId = supportedRailways[railway];
+
+    if (!railwayId) {
+      return NextResponse.json(
+        {
+          error: "지원하지 않는 노선입니다.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
     const params = new URLSearchParams({
       "odpt:operator": "odpt.Operator:JR-East",
-
-      "owl:sameAs": `odpt.Station:JR-East.Yamanote.${station}`,
-
+      "owl:sameAs": `odpt.Station:${railwayId}.${station}`,
       "acl:consumerKey": apiKey,
     });
 
@@ -403,7 +420,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data = (await response.json()) as OdptStation[];
-
     const odptStation = data[0];
 
     if (!odptStation) {
@@ -417,31 +433,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    /*
-     * 환승 노선
-     *
-     * 자기 자신인 山手線은 제외
-     */
     const connectingRailways: ConnectingRailway[] = (
       odptStation["odpt:connectingRailway"] ?? []
     )
-      .filter((railway) => railway !== "odpt.Railway:JR-East.Yamanote")
-      .map((railway) => {
-        const parsed = parseRailwayId(railway);
-
-        const info = getRailwayInfo(railway);
+      .filter(
+        (connectingRailway) =>
+          connectingRailway !== `odpt.Railway:${railwayId}`,
+      )
+      .map((connectingRailway) => {
+        const parsed = parseRailwayId(connectingRailway);
+        const info = getRailwayInfo(connectingRailway);
 
         return {
-          id: railway,
-
-          operator: getOperator(railway),
-
+          id: connectingRailway,
+          operator: getOperator(connectingRailway),
           railway: parsed.split(".").at(-1) ?? parsed,
-
           name: info.name,
-
           code: info.code,
-
           color: info.color,
         };
       });
@@ -449,18 +457,12 @@ export async function GET(request: NextRequest) {
     const result: StationApiResponse = {
       station: {
         id: station,
-
         code: odptStation["odpt:stationCode"],
-
         ja: odptStation["odpt:stationTitle"].ja,
-
         en: odptStation["odpt:stationTitle"].en,
-
         latitude: odptStation["geo:lat"],
-
         longitude: odptStation["geo:long"],
       },
-
       connectingRailways,
     };
 
