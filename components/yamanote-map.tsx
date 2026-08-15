@@ -5,12 +5,6 @@ import { useState } from "react";
 import { StationPanel } from "@/components/station-panel";
 import { YAMANOTE_STATIONS } from "@/lib/yamanote";
 
-import type { OdptTrain } from "@/types/train";
-
-interface YamanoteMapProps {
-  trains: OdptTrain[];
-}
-
 type Station = (typeof YAMANOTE_STATIONS)[number];
 
 const TRACK_RADIUS_PERCENT = 35;
@@ -60,7 +54,7 @@ function getLabelClass(angle: number) {
   return "left-7 top-1/2 -translate-y-1/2 text-left";
 }
 
-export function YamanoteMap({ trains: _trains }: YamanoteMapProps) {
+export function YamanoteMap() {
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const [stationPanelOpen, setStationPanelOpen] = useState(false);
 
