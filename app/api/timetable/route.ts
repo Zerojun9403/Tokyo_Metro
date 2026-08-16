@@ -4,6 +4,12 @@ import type { NextTrain, StationTimetable } from "@/types/timetable";
 
 const ODPT_URL = "https://api-challenge.odpt.org/api/v4/odpt:StationTimetable";
 
+type RailwayKey = "Yamanote" | "ChuoRapid" | "ChuoSobuLocal";
+
+type NextTrainWithDestination = NextTrain & {
+  destination?: string;
+};
+
 function getJapanNow() {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Tokyo",
@@ -21,29 +27,18 @@ function getJapanNow() {
   const getPart = (type: string) =>
     parts.find((part) => part.type === type)?.value ?? "";
 
-  const year = Number(getPart("year"));
-  const month = Number(getPart("month"));
-  const day = Number(getPart("day"));
-  const hour = Number(getPart("hour"));
-  const minute = Number(getPart("minute"));
-  const weekday = getPart("weekday");
-
   return {
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    weekday,
+    year: Number(getPart("year")),
+    month: Number(getPart("month")),
+    day: Number(getPart("day")),
+    hour: Number(getPart("hour")),
+    minute: Number(getPart("minute")),
+    weekday: getPart("weekday"),
   };
 }
 
 function getCalendar(weekday: string): "Weekday" | "SaturdayHoliday" {
-  if (weekday === "Sat" || weekday === "Sun") {
-    return "SaturdayHoliday";
-  }
-
-  return "Weekday";
+  return weekday === "Sat" || weekday === "Sun" ? "SaturdayHoliday" : "Weekday";
 }
 
 function getMinutesUntilDeparture(
@@ -57,17 +52,25 @@ function getMinutesUntilDeparture(
   const departureMinute = Number(minuteString);
 
   const nowMinutes = currentHour * 60 + currentMinute;
-
   const departureMinutes = departureHour * 60 + departureMinute;
 
   return departureMinutes - nowMinutes;
+}
+
+function parseDestination(value: unknown): string | undefined {
+  if (!Array.isArray(value) || typeof value[0] !== "string") {
+    return undefined;
+  }
+
+  return value[0].split(".").at(-1);
 }
 
 function getNextTrains(
   timetable: StationTimetable | undefined,
   currentHour: number,
   currentMinute: number,
-): NextTrain[] {
+  includeDestination = false,
+): NextTrainWithDestination[] {
   if (!timetable) {
     return [];
   }
@@ -80,11 +83,27 @@ function getNextTrains(
         currentMinute,
       );
 
-      return {
+      const train: NextTrainWithDestination = {
         trainNumber: item["odpt:trainNumber"],
         departureTime: item["odpt:departureTime"],
         minutesUntilDeparture,
       };
+
+      if (includeDestination) {
+        const destination = parseDestination(
+          (
+            item as typeof item & {
+              "odpt:destinationStation"?: unknown;
+            }
+          )["odpt:destinationStation"],
+        );
+
+        if (destination) {
+          train.destination = destination;
+        }
+      }
+
+      return train;
     })
     .filter((train) => train.minutesUntilDeparture >= 0)
     .sort((a, b) => a.minutesUntilDeparture - b.minutesUntilDeparture)
@@ -123,9 +142,14 @@ export async function GET(request: NextRequest) {
         firstDirection: "odpt.RailDirection:Inbound",
         secondDirection: "odpt.RailDirection:Outbound",
       },
+      ChuoSobuLocal: {
+        railwayId: "JR-East.ChuoSobuLocal",
+        firstDirection: "odpt.RailDirection:Eastbound",
+        secondDirection: "odpt.RailDirection:Westbound",
+      },
     } as const;
 
-    const config = supportedRailways[railway as keyof typeof supportedRailways];
+    const config = supportedRailways[railway as RailwayKey];
 
     if (!config) {
       return NextResponse.json(
@@ -153,12 +177,16 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: "ODPT 시간표 호출에 실패했습니다.", status: response.status },
+        {
+          error: "ODPT 시간표 호출에 실패했습니다.",
+          status: response.status,
+        },
         { status: response.status },
       );
     }
 
     const data = (await response.json()) as StationTimetable[];
+
     const todayData = data.filter(
       (timetable) => timetable["odpt:calendar"] === `odpt.Calendar:${calendar}`,
     );
@@ -166,6 +194,7 @@ export async function GET(request: NextRequest) {
     const first = todayData.find(
       (timetable) => timetable["odpt:railDirection"] === config.firstDirection,
     );
+
     const second = todayData.find(
       (timetable) => timetable["odpt:railDirection"] === config.secondDirection,
     );
@@ -183,6 +212,19 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    if (railway === "ChuoSobuLocal") {
+      return NextResponse.json({
+        station,
+        railway,
+        calendar,
+        updatedAt: new Date().toISOString(),
+        directions: {
+          eastbound: getNextTrains(first, now.hour, now.minute, true),
+          westbound: getNextTrains(second, now.hour, now.minute, true),
+        },
+      });
+    }
+
     return NextResponse.json({
       station,
       railway,
@@ -195,8 +237,11 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error(error);
+
     return NextResponse.json(
-      { error: "시간표 데이터를 처리하는 중 오류가 발생했습니다." },
+      {
+        error: "시간표 데이터를 처리하는 중 오류가 발생했습니다.",
+      },
       { status: 500 },
     );
   }

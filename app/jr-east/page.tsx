@@ -30,7 +30,7 @@ const jrEastLines = [
     en: "Chuo-Sobu Line",
     color: "#FFD400",
     href: "/jr-east/chuo-sobu",
-    available: false,
+    available: true,
   },
   {
     id: "keihin-tohoku",

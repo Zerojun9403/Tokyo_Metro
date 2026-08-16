@@ -20,9 +20,9 @@ export async function GET() {
     const params = new URLSearchParams({
       "odpt:operator": "odpt.Operator:JR-East",
 
-      "odpt:railway": "odpt.Railway:JR-East.ChuoRapid",
+      "odpt:railway": "odpt.Railway:JR-East.ChuoSobuLocal",
 
-      "odpt:station": "odpt.Station:JR-East.ChuoRapid.Shinjuku",
+      "odpt:station": "odpt.Station:JR-East.ChuoSobuLocal.Ochanomizu",
 
       "acl:consumerKey": apiKey,
     });
@@ -45,10 +45,6 @@ export async function GET() {
 
     const data = await response.json();
 
-    /*
-     * 원본 전체 데이터를 그대로 보여주면 너무 길기 때문에
-     * 시간표별 핵심 정보만 추출한다.
-     */
     const result = Array.isArray(data)
       ? data.map((timetable) => ({
           id: timetable["owl:sameAs"],
@@ -61,12 +57,10 @@ export async function GET() {
 
           railDirection: timetable["odpt:railDirection"],
 
-          destinationStation: timetable["odpt:destinationStation"],
-
           timetableCount: timetable["odpt:stationTimetableObject"]?.length ?? 0,
 
           sample: timetable["odpt:stationTimetableObject"]
-            ?.slice(0, 5)
+            ?.slice(0, 10)
             .map((item: Record<string, unknown>) => ({
               departureTime: item["odpt:departureTime"],
 
@@ -80,10 +74,10 @@ export async function GET() {
       : data;
 
     return NextResponse.json({
-      railway: "ChuoRapid",
-      station: "Shinjuku",
+      railway: "ChuoSobuLocal",
+      station: "Ochanomizu",
 
-      message: "주오선 쾌속 신주쿠역 StationTimetable 디버그 데이터",
+      message: "주오·소부선 오차노미즈역 시간표 방향 확인",
 
       result,
     });
@@ -92,7 +86,7 @@ export async function GET() {
 
     return NextResponse.json(
       {
-        error: "주오선 시간표 데이터를 확인하는 중 오류가 발생했습니다.",
+        error: "주오·소부선 시간표를 확인하는 중 오류가 발생했습니다.",
       },
       {
         status: 500,
