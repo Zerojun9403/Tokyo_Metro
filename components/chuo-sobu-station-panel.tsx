@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
@@ -210,45 +211,92 @@ export function ChuoSobuStationPanel({
 
                     {stationInfo.connectingRailways.length > 0 ? (
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        {stationInfo.connectingRailways.map((railway) => (
-                          <div
-                            key={railway.id}
-                            className="
-                              flex min-w-0 items-center gap-4 rounded-2xl
-                              border border-zinc-200 bg-white px-4 py-3
-                              shadow-[0_2px_8px_rgba(0,0,0,0.05)]
-                              transition-all hover:-translate-y-0.5
-                              hover:shadow-md
-                            "
-                          >
+                        {stationInfo.connectingRailways.map((railway) => {
+                          const href = getRailwayHref(
+                            railway.operator,
+                            railway.railway,
+                          );
+
+                          const cardContent = (
+                            <>
+                              <div
+                                className="
+                                  flex h-11 w-11 shrink-0 items-center
+                                  justify-center rounded-xl text-sm font-black
+                                  text-white shadow-sm
+                                "
+                                style={{
+                                  backgroundColor: railway.color,
+                                  color:
+                                    railway.color.toUpperCase() === "#FFD400"
+                                      ? "#18181b"
+                                      : "#ffffff",
+                                }}
+                              >
+                                {railway.code ?? "•"}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-bold text-zinc-900">
+                                  {railway.name}
+                                </p>
+
+                                <p className="mt-0.5 truncate text-xs text-zinc-500">
+                                  {getOperatorName(railway.operator)}
+                                </p>
+                              </div>
+
+                              {href && (
+                                <span
+                                  className="
+                                    flex h-8 w-8 shrink-0 items-center
+                                    justify-center rounded-full bg-zinc-100
+                                    text-lg font-bold text-zinc-600
+                                    transition-colors group-hover:bg-zinc-900
+                                    group-hover:text-white
+                                  "
+                                  aria-hidden="true"
+                                >
+                                  →
+                                </span>
+                              )}
+                            </>
+                          );
+
+                          if (href) {
+                            return (
+                              <Link
+                                key={railway.id}
+                                href={href}
+                                onClick={() => onOpenChange(false)}
+                                className="
+                                  group flex min-w-0 items-center gap-4 rounded-2xl
+                                  border border-zinc-200 bg-white px-4 py-3
+                                  shadow-[0_2px_8px_rgba(0,0,0,0.05)]
+                                  transition-all hover:-translate-y-0.5
+                                  hover:border-zinc-300 hover:shadow-md
+                                  focus-visible:outline-none focus-visible:ring-2
+                                  focus-visible:ring-yellow-500
+                                "
+                              >
+                                {cardContent}
+                              </Link>
+                            );
+                          }
+
+                          return (
                             <div
+                              key={railway.id}
                               className="
-                                flex h-11 w-11 shrink-0 items-center
-                                justify-center rounded-xl text-sm font-black
-                                text-white shadow-sm
+                                flex min-w-0 items-center gap-4 rounded-2xl
+                                border border-zinc-200 bg-white px-4 py-3
+                                shadow-[0_2px_8px_rgba(0,0,0,0.05)]
                               "
-                              style={{
-                                backgroundColor: railway.color,
-                                color:
-                                  railway.color.toUpperCase() === "#FFD400"
-                                    ? "#18181b"
-                                    : "#ffffff",
-                              }}
                             >
-                              {railway.code ?? "•"}
+                              {cardContent}
                             </div>
-
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-bold text-zinc-900">
-                                {railway.name}
-                              </p>
-
-                              <p className="mt-0.5 truncate text-xs text-zinc-500">
-                                {getOperatorName(railway.operator)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-zinc-200 bg-white p-5 text-sm text-zinc-500">
@@ -442,6 +490,20 @@ function getStationNumber(code: string) {
   const number = code.replace(/[^0-9]/g, "");
 
   return number.padStart(2, "0");
+}
+
+function getRailwayHref(operator: string, railway: string): string | null {
+  if (operator !== "JR-East") {
+    return null;
+  }
+
+  const routes: Record<string, string> = {
+    Yamanote: "/jr-east/yamanote",
+    ChuoRapid: "/jr-east/chuo-rapid",
+    ChuoSobuLocal: "/jr-east/chuo-sobu",
+  };
+
+  return routes[railway] ?? null;
 }
 
 function getOperatorName(operator: string) {
