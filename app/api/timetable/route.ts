@@ -97,25 +97,43 @@ export async function GET(request: NextRequest) {
 
     if (!apiKey) {
       return NextResponse.json(
-        {
-          error: "ODPT_API_KEY가 설정되지 않았습니다.",
-        },
-        {
-          status: 500,
-        },
+        { error: "ODPT_API_KEY가 설정되지 않았습니다." },
+        { status: 500 },
       );
     }
 
     const station = request.nextUrl.searchParams.get("station");
+    const railway = request.nextUrl.searchParams.get("railway") ?? "Yamanote";
 
     if (!station) {
       return NextResponse.json(
+        { error: "station 값이 필요합니다." },
+        { status: 400 },
+      );
+    }
+
+    const supportedRailways = {
+      Yamanote: {
+        railwayId: "JR-East.Yamanote",
+        firstDirection: "odpt.RailDirection:InnerLoop",
+        secondDirection: "odpt.RailDirection:OuterLoop",
+      },
+      ChuoRapid: {
+        railwayId: "JR-East.ChuoRapid",
+        firstDirection: "odpt.RailDirection:Inbound",
+        secondDirection: "odpt.RailDirection:Outbound",
+      },
+    } as const;
+
+    const config = supportedRailways[railway as keyof typeof supportedRailways];
+
+    if (!config) {
+      return NextResponse.json(
         {
-          error: "station 값이 필요합니다.",
+          error: "지원하지 않는 노선입니다.",
+          supportedRailways: Object.keys(supportedRailways),
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
 
@@ -124,11 +142,8 @@ export async function GET(request: NextRequest) {
 
     const params = new URLSearchParams({
       "odpt:operator": "odpt.Operator:JR-East",
-
-      "odpt:railway": "odpt.Railway:JR-East.Yamanote",
-
-      "odpt:station": `odpt.Station:JR-East.Yamanote.${station}`,
-
+      "odpt:railway": `odpt.Railway:${config.railwayId}`,
+      "odpt:station": `odpt.Station:${config.railwayId}.${station}`,
       "acl:consumerKey": apiKey,
     });
 
@@ -138,53 +153,51 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       return NextResponse.json(
-        {
-          error: "ODPT 시간표 호출에 실패했습니다.",
-          status: response.status,
-        },
-        {
-          status: response.status,
-        },
+        { error: "ODPT 시간표 호출에 실패했습니다.", status: response.status },
+        { status: response.status },
       );
     }
 
     const data = (await response.json()) as StationTimetable[];
-
     const todayData = data.filter(
       (timetable) => timetable["odpt:calendar"] === `odpt.Calendar:${calendar}`,
     );
 
-    const innerLoop = todayData.find(
-      (timetable) =>
-        timetable["odpt:railDirection"] === "odpt.RailDirection:InnerLoop",
+    const first = todayData.find(
+      (timetable) => timetable["odpt:railDirection"] === config.firstDirection,
+    );
+    const second = todayData.find(
+      (timetable) => timetable["odpt:railDirection"] === config.secondDirection,
     );
 
-    const outerLoop = todayData.find(
-      (timetable) =>
-        timetable["odpt:railDirection"] === "odpt.RailDirection:OuterLoop",
-    );
+    if (railway === "ChuoRapid") {
+      return NextResponse.json({
+        station,
+        railway,
+        calendar,
+        updatedAt: new Date().toISOString(),
+        directions: {
+          inbound: getNextTrains(first, now.hour, now.minute),
+          outbound: getNextTrains(second, now.hour, now.minute),
+        },
+      });
+    }
 
     return NextResponse.json({
       station,
+      railway,
       calendar,
       updatedAt: new Date().toISOString(),
-
       directions: {
-        innerLoop: getNextTrains(innerLoop, now.hour, now.minute),
-
-        outerLoop: getNextTrains(outerLoop, now.hour, now.minute),
+        innerLoop: getNextTrains(first, now.hour, now.minute),
+        outerLoop: getNextTrains(second, now.hour, now.minute),
       },
     });
   } catch (error) {
     console.error(error);
-
     return NextResponse.json(
-      {
-        error: "시간표 데이터를 처리하는 중 오류가 발생했습니다.",
-      },
-      {
-        status: 500,
-      },
+      { error: "시간표 데이터를 처리하는 중 오류가 발생했습니다." },
+      { status: 500 },
     );
   }
 }
