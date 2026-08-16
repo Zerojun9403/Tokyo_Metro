@@ -223,34 +223,27 @@ export function StationPanel({
 
   const direction = station ? DIRECTION_INFO[station.id] : undefined;
 
-  const currentTime = new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date());
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         className="
-    w-screen
+    w-[95vw]
     max-w-none
-    overflow-x-hidden
     overflow-y-auto
     border-l
     bg-[#fcfcfb]
     p-0
 
-    sm:w-[92vw]
-    sm:max-w-[720px]
+    sm:w-[720px]
+    sm:max-w-none
 
-    md:w-[760px]
+    md:w-[780px]
     md:max-w-none
 
-    lg:w-[820px]
+    lg:w-[860px]
     lg:max-w-none
 
-    xl:w-[880px]
+    xl:w-[920px]
     xl:max-w-none
   "
       >
@@ -264,23 +257,21 @@ export function StationPanel({
               className="
                 border-b
                 bg-white
-                px-4
-                py-5
-                pr-12
+                px-6
+                py-6
+                pr-14
                 sm:px-8
                 sm:py-7
               "
             >
-              <div className="flex items-center gap-3 sm:gap-5">
+              <div className="flex items-center gap-5">
                 {/* Station code */}
 
                 <div
                   className="
                     flex
-                    h-[66px]
-                    w-[66px]
-                    sm:h-[82px]
-                    sm:w-[82px]
+                    h-[82px]
+                    w-[82px]
                     shrink-0
                     flex-col
                     items-center
@@ -308,7 +299,7 @@ export function StationPanel({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
-                    <SheetTitle className="break-keep text-2xl font-black tracking-tight sm:text-[34px]">
+                    <SheetTitle className="text-3xl font-black tracking-tight sm:text-[34px]">
                       {station.ja}駅
                     </SheetTitle>
 
@@ -317,7 +308,7 @@ export function StationPanel({
                     </span>
                   </div>
 
-                  <SheetDescription className="mt-2 text-sm text-zinc-700 sm:mt-3 sm:text-base">
+                  <SheetDescription className="mt-3 text-base text-zinc-700">
                     <span className="font-medium text-zinc-900">
                       {station.en}
                     </span>
@@ -334,7 +325,7 @@ export function StationPanel({
                 BODY
             ============================ */}
 
-            <div className="space-y-5 px-4 py-5 sm:space-y-6 sm:px-8 sm:py-7">
+            <div className="space-y-6 px-5 py-6 sm:px-8 sm:py-7">
               {/* Loading */}
 
               {loading && (
@@ -451,80 +442,37 @@ export function StationPanel({
                         TODAY
                     ============================ */}
 
-                  <section
-                    className="
-                        flex
-                        items-center
-                        justify-between
-                        gap-4
-                        rounded-3xl
-                        bg-zinc-100/80
-                        px-5
-                        py-5
-                        sm:px-6
-                      "
-                  >
-                    <div className="flex items-center gap-4">
-                      <CalendarIcon className="h-8 w-8 text-[#74b500]" />
-
-                      <div>
-                        <p className="text-sm text-zinc-500">
-                          오늘의 운행 시간표
-                        </p>
-
-                        <p className="mt-1 text-lg font-black">
-                          {timetable.calendar === "Weekday"
-                            ? "평일"
-                            : "토요일 · 휴일"}
-                        </p>
-                      </div>
+                  <section>
+                    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <TrainIcon className="h-6 w-6 text-[#74b500]" />
+                      <h2 className="text-xl font-black">다음 열차</h2>
+                      <span className="text-sm text-zinc-500">次の電車</span>
+                      <span className="ml-auto text-xs font-medium text-zinc-400">
+                        {timetable.calendar === "Weekday"
+                          ? "평일 시간표"
+                          : "토요일 · 휴일 시간표"}
+                      </span>
                     </div>
 
-                    <div
-                      className="
-                          hidden
-                          items-center
-                          gap-2
-                          rounded-full
-                          bg-[#84c318]/10
-                          px-4
-                          py-2
-                          text-sm
-                          font-bold
-                          text-[#67a800]
-                          sm:flex
-                        "
-                    >
-                      <span className="h-3 w-3 rounded-full bg-[#84c318]" />
-                      기준 시간 {currentTime}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <TimetableCard
+                        title="内回り"
+                        koreanTitle="내선순환"
+                        toward={direction?.inner ?? "渋谷・品川方面"}
+                        arrow="←"
+                        side="left"
+                        trains={timetable.directions.innerLoop}
+                      />
+                      <TimetableCard
+                        title="外回り"
+                        koreanTitle="외선순환"
+                        toward={direction?.outer ?? "池袋・上野方面"}
+                        arrow="→"
+                        side="right"
+                        trains={timetable.directions.outerLoop}
+                      />
                     </div>
                   </section>
-
-                  {/* ===========================
-                        INNER
-                    ============================ */}
-
-                  <DirectionSection
-                    title="内回り"
-                    korean="내선순환"
-                    toward={direction?.inner ?? "渋谷・品川方面"}
-                    trains={timetable.directions.innerLoop}
-                  />
-
-                  {/* ===========================
-                        OUTER
-                    ============================ */}
-
-                  <DirectionSection
-                    title="外回り"
-                    korean="외선순환"
-                    toward={direction?.outer ?? "池袋・上野方面"}
-                    trains={timetable.directions.outerLoop}
-                  />
-
-                  {/* ===========================
-                        NOTICE
-                    ============================ */}
 
                   <section
                     className="
@@ -563,11 +511,12 @@ export function StationPanel({
    DIRECTION SECTION
 ====================================================== */
 
-interface DirectionSectionProps {
+interface TimetableCardProps {
   title: string;
-  korean: string;
+  koreanTitle: string;
   toward: string;
-
+  arrow: "→" | "←";
+  side: "left" | "right";
   trains: {
     trainNumber: string;
     departureTime: string;
@@ -575,152 +524,107 @@ interface DirectionSectionProps {
   }[];
 }
 
-function DirectionSection({
+function TimetableCard({
   title,
-  korean,
+  koreanTitle,
   toward,
+  arrow,
+  side,
   trains,
-}: DirectionSectionProps) {
+}: TimetableCardProps) {
   return (
-    <section
-      className="
-        rounded-3xl
-        bg-[#fbfcf8]
-        p-4
-        sm:p-5
-      "
-    >
-      {/* Header */}
-
-      <div className="mb-5">
-        <div className="flex items-center gap-3">
-          <span
-            className="h-5 w-5 rounded-full"
-            style={{
-              backgroundColor: YAMANOTE_GREEN,
-            }}
-          />
-
-          <h2 className="text-xl font-black sm:text-2xl">{title}</h2>
-
-          <span className="text-sm text-zinc-500">{korean}</span>
-        </div>
-
-        <div className="ml-7 mt-3 flex items-center gap-3">
-          <span className="text-xl font-bold text-[#74b500]">→</span>
-
-          <span className="break-keep text-sm font-bold sm:text-base">
-            {toward}
-          </span>
-        </div>
+    <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+      <div
+        className={`flex items-center border-b border-zinc-200 bg-[#fbfcf8] px-5 py-4 ${
+          side === "right" ? "justify-end" : "justify-start"
+        }`}
+      >
+        {side === "left" ? (
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              className="h-4 w-4 shrink-0 rounded-full"
+              style={{ backgroundColor: YAMANOTE_GREEN }}
+            />
+            <span className="text-lg font-black text-zinc-700">{arrow}</span>
+            <div
+              className={`min-w-0 ${side === "right" ? "text-right" : "text-left"}`}
+            >
+              <div
+                className={`flex flex-wrap items-baseline gap-x-2 ${
+                  side === "right" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <p className="text-lg font-black text-zinc-950">{title}</p>
+                <span className="text-xs font-medium text-zinc-500">
+                  {koreanTitle}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate text-xs font-medium text-zinc-500">
+                {toward}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className={`min-w-0 ${side === "right" ? "text-right" : "text-left"}`}
+            >
+              <div
+                className={`flex flex-wrap items-baseline gap-x-2 ${
+                  side === "right" ? "justify-end" : "justify-start"
+                }`}
+              >
+                <p className="text-lg font-black text-zinc-950">{title}</p>
+                <span className="text-xs font-medium text-zinc-500">
+                  {koreanTitle}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate text-xs font-medium text-zinc-500">
+                {toward}
+              </p>
+            </div>
+            <span className="text-lg font-black text-zinc-700">{arrow}</span>
+            <span
+              className="h-4 w-4 shrink-0 rounded-full"
+              style={{ backgroundColor: YAMANOTE_GREEN }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Trains */}
-
       {trains.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-5 text-sm text-zinc-500">
+        <div className="px-5 py-6 text-sm text-zinc-500">
           현재 표시할 다음 열차가 없습니다.
         </div>
       ) : (
-        <div
-          className="
-            overflow-hidden
-            rounded-2xl
-            border
-            border-zinc-200
-            bg-white
-            shadow-[0_3px_12px_rgba(0,0,0,0.04)]
-          "
-        >
-          {trains.map((train, index) => {
-            const isLeaving = train.minutesUntilDeparture <= 0;
-
-            return (
-              <div
-                key={`${train.trainNumber}-${train.departureTime}`}
-                className={`
-                  flex
-                  items-center
-                  justify-between
-                  gap-4
-                  px-4
-                  py-4
-                  sm:px-6
-                  ${
-                    index !== trains.length - 1
-                      ? "border-b border-zinc-200"
-                      : ""
-                  }
-                `}
-              >
-                {/* Left */}
-
-                <div className="flex items-center gap-4">
-                  <div
-                    className="
-                      flex
-                      h-10
-                      w-10
-                      sm:h-12
-                      sm:w-12
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-full
-                      text-white
-                      shadow-sm
-                    "
-                    style={{
-                      backgroundColor: YAMANOTE_GREEN,
-                    }}
-                  >
-                    <TrainIcon className="h-6 w-6" />
-                  </div>
-
-                  <div>
-                    <p className="text-xl font-black tabular-nums tracking-tight sm:text-2xl">
-                      {train.departureTime}
-                    </p>
-
-                    <p className="mt-0.5 text-sm text-zinc-500">
-                      {train.trainNumber}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Right */}
-
-                <div className="text-right">
-                  {isLeaving ? (
-                    <>
-                      <p className="text-xl font-black text-[#6eae00]">
-                        곧 출발
-                      </p>
-
-                      <p className="mt-1 text-xs text-zinc-500">출발 예정</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-lg font-black tabular-nums sm:text-2xl">
-                        약 {train.minutesUntilDeparture}분
-                      </p>
-
-                      <p className="mt-1 text-xs text-zinc-500">후 출발</p>
-                    </>
-                  )}
-                </div>
+        <div>
+          {trains.map((train, index) => (
+            <div
+              key={`${train.trainNumber}-${train.departureTime}`}
+              className={`flex items-center justify-between gap-4 px-5 py-4 ${
+                index !== trains.length - 1 ? "border-b border-zinc-100" : ""
+              }`}
+            >
+              <div className="min-w-0">
+                <p className="text-xl font-black tabular-nums text-zinc-950">
+                  {train.departureTime}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {train.trainNumber}
+                </p>
               </div>
-            );
-          })}
+              <p className="shrink-0 text-base font-black text-zinc-950">
+                {train.minutesUntilDeparture <= 0
+                  ? "곧 출발"
+                  : `${train.minutesUntilDeparture}분 후`}
+              </p>
+            </div>
+          ))}
         </div>
       )}
-    </section>
+    </div>
   );
 }
-
-/* ======================================================
-   HELPERS
-====================================================== */
 
 function getStationNumber(code?: string) {
   if (!code) {

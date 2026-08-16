@@ -351,6 +351,7 @@ export function ChuoSobuStationPanel({
                         title="三鷹方面"
                         koreanTitle="미타카 방면"
                         arrow="←"
+                        side="left"
                         trains={timetable.directions.westbound}
                       />
 
@@ -358,6 +359,7 @@ export function ChuoSobuStationPanel({
                         title="千葉方面"
                         koreanTitle="지바 방면"
                         arrow="→"
+                        side="right"
                         trains={timetable.directions.eastbound}
                       />
                     </div>
@@ -393,6 +395,7 @@ interface TimetableCardProps {
   title: string;
   koreanTitle: string;
   arrow: "→" | "←";
+  side: "left" | "right";
   trains: NextTrain[];
 }
 
@@ -400,20 +403,41 @@ function TimetableCard({
   title,
   koreanTitle,
   arrow,
+  side,
   trains,
 }: TimetableCardProps) {
   return (
     <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center gap-3 border-b border-zinc-200 bg-[#fffdf2] px-5 py-4">
-        <span
-          className="h-4 w-4 shrink-0 rounded-full"
-          style={{ backgroundColor: CHUO_SOBU_COLOR }}
-        />
-        <span className="text-lg font-black text-zinc-700">{arrow}</span>
-        <div>
-          <p className="text-lg font-black text-zinc-950">{title}</p>
-          <p className="text-xs font-medium text-zinc-500">{koreanTitle}</p>
-        </div>
+      <div
+        className={`flex items-center border-b border-zinc-200 bg-[#fffdf2] px-5 py-4 ${
+          side === "right" ? "justify-end" : "justify-start"
+        }`}
+      >
+        {side === "left" ? (
+          <div className="flex w-full min-w-0 items-center gap-3">
+            <span
+              className="h-4 w-4 shrink-0 rounded-full"
+              style={{ backgroundColor: CHUO_SOBU_COLOR }}
+            />
+            <span className="text-lg font-black text-zinc-700">{arrow}</span>
+            <div className="text-left">
+              <p className="text-lg font-black text-zinc-950">{title}</p>
+              <p className="text-xs font-medium text-zinc-500">{koreanTitle}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex w-full min-w-0 items-center justify-end gap-3">
+            <div className="text-right">
+              <p className="text-lg font-black text-zinc-950">{title}</p>
+              <p className="text-xs font-medium text-zinc-500">{koreanTitle}</p>
+            </div>
+            <span className="text-lg font-black text-zinc-700">{arrow}</span>
+            <span
+              className="h-4 w-4 shrink-0 rounded-full"
+              style={{ backgroundColor: CHUO_SOBU_COLOR }}
+            />
+          </div>
+        )}
       </div>
 
       {trains.length === 0 ? (
