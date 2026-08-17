@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, TrainFront } from "lucide-react";
+import { ArrowRight, ExternalLink, TrainFront } from "lucide-react";
 
 const railwayCompanies = [
   {
@@ -8,6 +8,7 @@ const railwayCompanies = [
     ko: "JR동일본",
     en: "JR East",
     href: "/jr-east",
+    external: false,
     available: true,
   },
   {
@@ -15,7 +16,8 @@ const railwayCompanies = [
     ja: "東京メトロ",
     ko: "도쿄메트로",
     en: "Tokyo Metro",
-    href: "/tokyo-metro",
+    href: "https://tokyo-metro-app.vercel.app/",
+    external: true,
     available: true,
   },
   {
@@ -23,8 +25,9 @@ const railwayCompanies = [
     ja: "都営地下鉄",
     ko: "도에이지하철",
     en: "Toei Subway",
-    href: "/toei",
-    available: false,
+    href: "https://toei-metro.vercel.app/",
+    external: true,
+    available: true,
   },
   {
     id: "keio",
@@ -32,6 +35,7 @@ const railwayCompanies = [
     ko: "게이오전철",
     en: "Keio",
     href: "/keio",
+    external: false,
     available: false,
   },
   {
@@ -40,6 +44,7 @@ const railwayCompanies = [
     ko: "게이세이전철",
     en: "Keisei",
     href: "/keisei",
+    external: false,
     available: false,
   },
   {
@@ -48,6 +53,7 @@ const railwayCompanies = [
     ko: "도쿄모노레일",
     en: "Tokyo Monorail",
     href: "/tokyo-monorail",
+    external: false,
     available: false,
   },
 ];
@@ -97,6 +103,8 @@ export default function Home() {
                 <Link
                   key={company.id}
                   href={company.href}
+                  target={company.external ? "_blank" : undefined}
+                  rel={company.external ? "noopener noreferrer" : undefined}
                   className="
                     group
                     relative
@@ -127,7 +135,11 @@ export default function Home() {
                         </div>
 
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 transition-colors group-hover:bg-zinc-950 group-hover:text-white">
-                          <ArrowRight className="h-4 w-4" />
+                          {company.external ? (
+                            <ExternalLink className="h-4 w-4" />
+                          ) : (
+                            <ArrowRight className="h-4 w-4" />
+                          )}
                         </div>
                       </div>
 
@@ -150,6 +162,12 @@ export default function Home() {
                       </p>
 
                       <p className="mt-1 text-sm text-zinc-400">{company.en}</p>
+
+                      <p className="mt-4 text-xs font-bold text-zinc-400">
+                        {company.external
+                          ? "독립 서비스 열기 ↗"
+                          : "서비스 열기 →"}
+                      </p>
                     </div>
                   </div>
                 </Link>
